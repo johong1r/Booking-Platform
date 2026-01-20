@@ -1,0 +1,77 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:18-alpine3.18
+    env_file:
+      - .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - app
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    networks:
+      - app
+
+  adminer:
+    image: adminer
+    restart: always
+    depends_on:
+      - postgres
+    ports:
+      - ${ADMINER_PORT}:8080
+    networks:
+      - app
+
+  main:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    ports:
+      - ${PORT}:8000
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - app
+    restart: always
+
+  celery_worker:
+    build: .
+    command: celery -A core worker -l info
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - app
+    restart: always
+
+  celery_beat:
+    build: .
+    command: celery -A core beat -l info
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - app
+    restart: always
+
+networks:
+  app:
+
+volumes:
+  pgdata:
