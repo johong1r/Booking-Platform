@@ -29,6 +29,7 @@ class TicketType(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='standard')
     price = models.PositiveIntegerField(verbose_name='Цена')
     total_quantity = models.IntegerField(verbose_name='Общее количество')
+    
     def __str__(self):
         return f"{self.id} - {self.event}"
     
@@ -66,3 +67,4 @@ class BookingItem(models.Model):
     class Meta:
         verbose_name = 'Элемент бронирования'
         verbose_name_plural = 'Элементы бронирования'
+        unique_together = ('booking', 'ticket_type')

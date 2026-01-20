@@ -8,10 +8,9 @@ from .serializers import (RegisterSerializer,
                           GenericChangePasswordSerializer,
                           ResetPasswordConfirmSerializer,
                           ResetPasswordRequestSerializer,
-                          ResetPasswordVerifySerializer
+                          ResetPasswordVerifySerializer,
+                          EmptySerializer
                           )
-from main.models import Product
-from api.main.serializers import ProductSerializer
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from django.core.mail import send_mail
@@ -22,12 +21,6 @@ from django.conf import settings
 class RegisterView(CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
-    permission_classes = (AllowAny,)
-
-
-class ApartmentListView(ListAPIView):
-    queryset = Product.objects.all()
-    serializer_class = ProductSerializer
     permission_classes = (AllowAny,)
 
 
@@ -63,6 +56,7 @@ class ChangePasswordView(GenericAPIView):
 
 class LogoutView(GenericAPIView):
     permission_classes = (IsAuthenticated,)
+    serializer_class = EmptySerializer
 
     def post(self, request, *args, **kwargs):
         Token.objects.filter(user=request.user).delete()
@@ -103,10 +97,8 @@ class ResetPasswordRequestView(GenericAPIView):
         from random import randint
 
         code = str(randint(1000, 9999))
-        PasswordResetCode.objects.create(
-            email=email,
-            code=code,
-        )
+        PasswordResetCode.create_code(email=email)
+
 
         message = f"Ваш код для сброса пароля: {code}"
 

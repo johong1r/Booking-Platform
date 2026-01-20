@@ -15,7 +15,7 @@ class LoginSerializer(serializers.Serializer):
         user = authenticate(email=attrs['email'], password=attrs['password'])
 
         if not user:
-            return serializers.ValidationError('Неверный логин или пароль!')
+            raise serializers.ValidationError('Неверный логин или пароль!')
         token, _ = Token.objects.get_or_create(user=user)
         return {'token': token.key, 'email': user.email}
     
@@ -30,12 +30,16 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         if attrs['password1'] != attrs['password2']:
-            return serializers.ValidationError('Пароли не совпадают!')
+            raise serializers.ValidationError('Пароли не совпадают!')
         return attrs
     
     def create(self, validated_data):
         validated_data.pop('password2')
-        user = User.objects.create(**validated_data)
+        user = User.objects.create_user(
+                email=validated_data['email'],
+                full_name=validated_data['full_name'],
+                password=validated_data['password1']
+            )
         Token.objects.create(user=user)
         return validated_data
     
@@ -43,8 +47,8 @@ class RegisterSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('email', 'full_name', 'phone_number')
-        read_only = ('email')
+        fields = ('email', 'full_name', 'phone_number',)
+        read_only_fields = ('email',)
 
 
 class FunctionChangePasswordSerializer(serializers.Serializer):
@@ -114,3 +118,7 @@ class ResetPasswordConfirmSerializer(serializers.Serializer):
     email = serializers.EmailField()
     code = serializers.CharField(max_length=4)
     new_password = serializers.CharField(min_length=8)
+
+
+class EmptySerializer(serializers.Serializer):
+    pass
