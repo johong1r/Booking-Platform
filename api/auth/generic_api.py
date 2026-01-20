@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from django.core.mail import send_mail
 from django.conf import settings
+from main.tasks import send_email_task
 
 
 
@@ -82,37 +83,26 @@ class DeactivateAccountView(DestroyAPIView):
 class ResetPasswordRequestView(GenericAPIView):
     serializer_class = ResetPasswordRequestSerializer
     permission_classes = (AllowAny,)
+
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception = True)
+        serializer.is_valid(raise_exception=True)
 
-        email = serializer.validated_data.get('email', None)
+        email = serializer.validated_data.get('email')
 
-        if not email:
-            return Response({"message":"Необходимо указать email"}, status=400)
-        
-        if email and not User.objects.filter(email=email).exists():
-            return Response({"message":" Пользователь с таким именем не найден"}, status=400)
-        
-        from random import randint
+        if not User.objects.filter(email=email).exists():
+            return Response({"message": "Пользователь с таким email не найден"}, status=400)
 
-        code = str(randint(1000, 9999))
-        PasswordResetCode.create_code(email=email)
+        reset_code = PasswordResetCode.create_code(email=email)
+        code = reset_code.code
 
-
-        message = f"Ваш код для сброса пароля: {code}"
-
-
-        response = send_mail(
-            subject="Востановление пароля",
-            message=message,
-            from_email=settings.EMAIL_HOST_USER,
-            recipient_list=[email],
+        send_email_task.delay(
+            subject="Восстановление пароля",
+            message=f"Ваш код для сброса пароля: {code}",
+            recipient_list=[email]
         )
 
-        if response == 0:
-            return Response({"message":"Неудалось отправить код на email"}, status=500)
-        return Response({"message":"Код успешно отправлен на email"}, status=200)
+        return Response({"message": "Код успешно отправлен на email"}, status=200)
 
 
 
