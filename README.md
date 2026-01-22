@@ -41,8 +41,6 @@ core/
 accounts/
 ├── models.py
 ├── managers.py
-├── serializers.py
-├── generic_api.py
 main/
 ├── models.py
 ├── tasks.py
@@ -52,7 +50,8 @@ api/
 │   ├── generic_api.py
 │   └── endpoints.py
 ├── main/
-│   ├── viewsets.py
+│   ├── class_api.py
+│   ├── endpoints.py
 │   ├── serializers.py
 │   ├── filters.py
 │   ├── permissions.py
